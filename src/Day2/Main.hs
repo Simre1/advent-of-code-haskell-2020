@@ -6,6 +6,7 @@ import Data.Text.Read ( decimal )
 import Data.Maybe (isJust)
 import qualified Data.Text.IO as T
 import Control.Applicative ( Alternative((<|>)) )
+import Data.Foldable
 
 inputParser :: P.Parser [(Int, Int, Char, Text)]
 inputParser = do
@@ -17,7 +18,7 @@ inputParser = do
   P.char ':'
   P.char ' '
   password <- P.takeWhile (/='\n')
-  let result = either error id $ (,,,) 
+  result <- either fail pure $ (,,,) 
                 <$> fmap fst (decimal firstNumber) 
                 <*> fmap fst (decimal secondNumber)
                 <*> pure char 
@@ -31,7 +32,7 @@ inputParser = do
 runSolution :: ((Int, Int, Char, Text) -> Bool) -> IO ()
 runSolution checkPassword = do
   passwords <- either error id . P.parseOnly inputParser <$> T.readFile "inputs/day2/input1"
-  let validPasswords = foldr (\p a -> if checkPassword p then succ a else a) 0 passwords
+  let validPasswords = foldl' (\a p -> if checkPassword p then succ a else a) 0 passwords
   print validPasswords
 
 solution1 :: IO ()
