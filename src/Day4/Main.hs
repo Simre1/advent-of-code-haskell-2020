@@ -22,7 +22,7 @@ scanner fieldParser = do
   let fieldCount = sum $ snd <$> nubBy (\a b -> fst a == fst b) matches
   (P.char '\n' *> scanner fieldParser) <|> pure 0 &
     if fieldCount == 7
-      then fmap succ
+      then fmap (+1)
       else id
   
 solution1 :: IO ()
