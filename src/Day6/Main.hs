@@ -10,7 +10,7 @@ parseFile :: String -> [Set Char]
 parseFile str = foldMap singleton <$> fmap (mconcat . words) (splitOn "\n\n" str)
 
 solution1 :: IO ()
-solution1 = readFile"inputs/day6/input1">>=print.foldMap(Sum .size.(foldMap singleton.mconcat.words)).splitOn"\n\n"
+solution1 = readFile"inputs/day6/input1">>=print.foldMap(Sum .size.(fromList.mconcat.words)).splitOn"\n\n"
 
 solution2 :: IO ()
-solution2 = readFile"inputs/day6/input1">>=print.foldMap(Sum .size.(foldr(intersection.foldMap singleton)(fromList['a'..'z']).lines)).splitOn"\n\n"
+solution2 = readFile"inputs/day6/input1">>=print.foldMap(Sum .size.(foldl1 intersection.fmap fromList.lines)).splitOn"\n\n"
