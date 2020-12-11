@@ -19,10 +19,10 @@ extra-source-files:  CHANGELOG.md
 library
   hs-source-dirs: src
   exposed-modules: Day1.Main, Day2.Main, Day3.Main, Day4.Main, Day5.Main, Day6.Main, Day7.Main, Day8.Main,
-                   Day9.Main, Day10.Main
+                   Day9.Main, Day10.Main, Day11.Main
   -- other-modules:
   -- other-extensions:
-  build-depends:       base >=4.14 && <4.15, containers, text, bytestring, split, criterion, attoparsec
+  build-depends:       base >=4.14 && <4.15, containers, text, bytestring, split, criterion, attoparsec, vector
   -- hs-source-dirs:
   default-language:    Haskell2010
   default-extensions:

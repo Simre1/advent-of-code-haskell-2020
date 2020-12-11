@@ -11,8 +11,8 @@ My solutions to the coding problems in Advent of Code 2020.
 - [x] Day 7
 - [x] Day 8
 - [x] Day 9
-- [ ] Day 10
-- [ ] Day 11
+- [x] Day 10
+- [x] Day 11
 - [ ] Day 12
 - [ ] Day 13
 - [ ] Day 14
