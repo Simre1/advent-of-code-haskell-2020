@@ -15,6 +15,7 @@ import qualified Day12.Main as D12
 import qualified Day13.Main as D13
 import qualified Day14.Main as D14
 import qualified Day15.Main as D15
+import qualified Day16.Main as D16
 
 import System.Environment ( getArgs )
 
@@ -37,4 +38,5 @@ main = do
     "13" -> D13.solution1 *> D13.solution2
     "14" -> D14.solution1 *> D14.solution2
     "15" -> D15.solution1 *> D15.solution2
+    "16" -> D16.solution1 *> D16.solution2
     _ -> print "No puzzle matched"

@@ -23,17 +23,15 @@ speakNumber (last, numbers) turn =
 
 speakNumberMut :: V.MVector (PrimState IO) (Int, Int) -> Int -> Int -> IO Int
 speakNumberMut table turn last = do
-  (firstTurn,secondTurn) <- V.read table last
+  (firstTurn,secondTurn) <- V.unsafeRead table last
   let newNumber = if firstTurn == 0 then 0 else secondTurn - firstTurn
-  (_,y) <- V.read table newNumber
-  V.write table newNumber (y, turn)
+  V.unsafeModify table (\(_,y) -> (y,turn)) newNumber
   pure newNumber
 
 solution2 :: IO ()
 solution2 = do
   numbers <- fmap (read @Int) . splitOn "," <$> readFile "inputs/day15/input1"
   numberTable <- V.new 30000000
-  V.set numberTable (0,0) 
   foldMap (uncurry (V.write numberTable)) (zip numbers (repeat 0 `zip` [1..]))
   lastNumber <- foldl' (\b a -> b >>= speakNumberMut numberTable a) (pure $ last numbers) [fromIntegral (length numbers+1)..30000000]
   print lastNumber
