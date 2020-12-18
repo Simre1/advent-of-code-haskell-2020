@@ -13,6 +13,7 @@ parseInput str =
   let l = lines str
    in (fmap (\c -> if c == '#' then 1 else 0) (mconcat l), length l)
 
+
 solution1 :: IO ()
 solution1 = do
   (input, row) <- parseInput <$> readFile "inputs/day17/input1"
