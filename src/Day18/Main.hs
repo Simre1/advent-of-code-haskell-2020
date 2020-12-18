@@ -9,15 +9,12 @@ import qualified Text.Megaparsec.Char as P
 import qualified Text.Megaparsec.Char.Lexer as P
 import Data.Monoid (Sum(Sum))
 
-data Expr
-  = Lit Int
-  | Add Expr Expr
-  | Mult Expr Expr
-  deriving (Show, Eq)
-
 type Parser = P.Parsec Void Text
 
-parser :: Int -> Parser Expr
+-- Parses a line immediately calculates the solution
+-- 1 -> + and * have the same precedence
+-- 2 -> + binds stronger than *
+parser :: Int -> Parser Int
 parser i = do
   expr <- unaryExpr >>= nextExpr i
   () <$ P.newline <|> P.eof <|> pure ()
@@ -25,16 +22,14 @@ parser i = do
   where
     unaryExpr = do
       P.hspace
-      expr1 <- P.choice [Lit <$> P.decimal, brackets]
-      P.hspace
-      pure expr1
+      P.choice [P.decimal, brackets]
     nextExpr 1 expr1 = do
       P.hspace
       let nextOp = do
             P.hspace
-            op <- (Add <$ P.char '+') <|> (Mult <$ P.char '*')
+            op <- ((+) <$ P.char '+') <|> ((*) <$ P.char '*')
             P.hspace
-            op expr1 <$> P.choice [Lit <$> P.decimal, brackets]
+            op expr1 <$> P.choice [P.decimal, brackets] -- Consume next literal immediately
       (nextOp >>= nextExpr i) <|> pure expr1
     nextExpr 2 expr1 = do
       P.hspace
@@ -43,12 +38,12 @@ parser i = do
             let plus = do
                   P.char '+'
                   P.hspace
-                  Add expr1 <$> P.choice [Lit <$> P.decimal, brackets]
+                  (+) expr1 <$> P.choice [P.decimal, brackets] -- Consume next literal immediately for addition
                 mult = do
                   P.hspace
                   P.char '*'
                   P.hspace
-                  Mult expr1 <$> (unaryExpr >>= nextExpr 2)
+                  (*) expr1 <$> (unaryExpr >>= nextExpr 2) -- Fully calculate the right hand side and then multiply
             mult <|> plus
       (nextOp >>= nextExpr i) <|> pure expr1
     brackets = do
@@ -57,20 +52,12 @@ parser i = do
       P.hspace *> P.char ')'
       pure res
 
-solveExpr :: Expr -> Int
-solveExpr = \case
-  Lit i -> i
-  Add x y -> solveExpr x + solveExpr y
-  Mult x y -> solveExpr x * solveExpr y
-
 solution1 :: IO ()
 solution1 = do
   exprs <- T.readFile "inputs/day18/input1" >>= either (fail . P.errorBundlePretty) pure . P.parse (many $ parser 1) "Parser"
-  print $ foldMap (Sum . solveExpr) exprs
-  pure ()
+  print $ sum exprs
 
 solution2 :: IO ()
 solution2 = do
   exprs <- T.readFile "inputs/day18/input1" >>= either (fail . P.errorBundlePretty) pure . P.parse (many $ parser 2) "Parser"
-  print $ foldMap (Sum . solveExpr) exprs
-  pure ()
+  print $ sum exprs
