@@ -20,8 +20,8 @@ import qualified Day17.Main as D17
 import qualified Day18.Main as D18
 import qualified Day19.Main as D19
 import qualified Day20.Main as D20
-import qualified Day20.Main as D21
-import qualified Day20.Main as D22
+import qualified Day21.Main as D21
+import qualified Day22.Main as D22
 
 import System.Environment ( getArgs )
 
