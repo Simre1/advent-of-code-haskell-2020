@@ -1,0 +1,150 @@
+{-# LANGUAGE ViewPatterns #-}
+module Day23.Main where
+
+import Data.List
+import Debug.Trace (traceShow, traceShowId)
+
+import qualified Data.Vector.Unboxed.Mutable as V
+import Control.Monad.Primitive
+import Control.Monad.ST
+import System.Random
+
+executeMoves :: Int -> [Int] -> [Int]
+executeMoves i ints = applyNTimes i doMove ints
+  where
+    doMove :: [Int] -> [Int]
+    doMove (c:p1:p2:p3:r) = insertAtPosition (c-1)
+      where 
+        insertAtPosition a
+          | a < lowest = insertAtPosition highest
+          | a `elem` (p1:p2:p3:[]) = 
+            insertAtPosition (a-1)
+          | otherwise =
+            let (x1,(x:x2)) = break (==a) r
+            in x1 ++ (x:p1:p2:p3:x2) ++ [c]
+    lowest :: Int
+    lowest = minimum ints
+    highest :: Int
+    highest = maximum ints
+
+executeMovesVector :: Int -> [Int] -> IO [Int]
+executeMovesVector moves ints = do
+  let l = length ints
+  cups <- V.new (round $ fromIntegral l * 2)
+  positions <- V.new (l)
+
+  foldMap (\(a,b) -> V.write cups a b *> V.write positions (b-1) a) (zip [0..l] ints)
+  final <- foldl' (\getP i -> getP >>= traceShow i . doMove positions cups) (pure 0) [1..moves]
+  mem <- getMem cups
+  print mem
+  res <- pure $ filter (/= 0) mem
+  pure res
+  where
+    getMem cups = traverse (V.read cups) [0..V.length cups-1]
+    doMove :: V.MVector RealWorld Int ->  V.MVector RealWorld Int -> Int -> IO Int
+    doMove positions cups pos = do
+      c <- V.read cups pos
+
+      (cards,_) <- 
+        let loop i o p
+              | i == 0 = pure (o, p)
+              | otherwise = do
+                  c <- V.read cups (f p)
+                  V.write cups (f p) 0
+                  if c /= 0
+                    then loop (pred i) (o++[c]) (succ p)
+                    else loop i o (succ p)
+        in loop 3 [] (pos+1)
+
+      (nextCard, nextPosition) <- findPosition_new cards (c-1)
+
+      insertCards (f $ nextPosition+1) $ cards
+
+
+      nextPos <- succ <$> V.read positions (c-1)
+
+      nextCurrent <- let loop p = do
+                          x <- V.read cups (f p)
+                          if x == 0
+                            then loop (p+1)
+                            else pure p
+                      in loop nextPos 
+
+      -- memP <- getMem positions
+      -- memC <- getMem cups
+      -- pure $! traceShowId ((c, nextPos),nextCurrent, memC, memP)
+
+      pure (f $ nextCurrent)
+      where
+        
+
+        findPosition_new :: [Int] -> Int -> IO (Int, Int)
+        findPosition_new cards a
+          | a < lowest = findPosition_new cards highest
+          | a `elem` cards = findPosition_new cards  (a-1)
+          | otherwise = (\b -> (a,b)) <$> V.read positions ((a-1) `mod` V.length positions)
+
+        findPosition :: [Int] -> Int -> Int -> IO (Int, Int)
+        findPosition cards pos a
+          | a < lowest = findPosition cards pos highest
+          | a `elem` cards = findPosition cards pos (a-1)
+          | otherwise =
+            let loop pos' = do
+                  x <- V.read cups (f pos')
+                  if x == a 
+                    then pure (a, pos')
+                    else loop (succ pos')
+            in loop pos
+        insertCards :: Int -> [Int] -> IO ()
+        insertCards pos [] = pure ()
+        insertCards pos (x:xs) = do
+          v <- V.read cups (f pos)
+          if v /= 0
+            then do
+              V.write cups (f pos) x
+              V.write positions (x-1) (f pos)
+              insertCards (f $ succ pos) $ xs ++ [v]
+            else do
+              -- r <- randomRIO @Int (0,100) 
+              -- if r > 0
+              --   then do
+                  V.write cups (f pos) x
+                  V.write positions (x-1) (f pos)
+                  insertCards (f $ succ pos) $ xs
+                -- else insertCards (f $ succ pos) (x:xs)
+        -- insertCards :: Int -> [Int] -> IO ()
+        -- insertCards pos [] = pure ()
+        -- insertCards pos (x:xs) = do
+        --   v <- V.read cups (f pos)
+        --   V.write cups (f pos) x
+        --   V.write positions (x-1) (f pos)
+        --   insertCards (f $ succ pos) $ if v == 0 then xs else xs ++ [v]
+        f x = x `mod` V.length cups
+    lowest :: Int
+    lowest = minimum ints
+    highest :: Int
+    highest = maximum ints
+
+extractSolution1 :: [Int] -> String
+extractSolution1 ints = 
+  let (p1,_:p2) = break (==1) ints
+  in toEnum . (+48) <$> p2 ++ p1
+
+extractSolution2 :: [Int] -> Int
+extractSolution2 ints = 
+  let (p1,_:p2) = break (==1) ints
+  in product $ take 2 (take 1 p2 ++ p1)
+
+applyNTimes :: Int -> (a -> a) -> a -> a
+applyNTimes 0 _ a = a
+applyNTimes x f a = applyNTimes (pred x) f $ f a
+
+solution1 :: IO ()
+solution1 = do
+  input <- fmap ((\x -> x-48) . fromEnum) . take 9 <$> readFile "inputs/day23/input1"
+  extractSolution1 <$> executeMovesVector 100 input >>= putStrLn
+
+solution2 :: IO ()
+solution2 = do
+  input <- fmap ((\x -> x-48) . fromEnum) . take 9 <$> readFile "inputs/day23/exampleInput"
+  extractSolution2 <$> executeMovesVector 1 (input ++ [maximum input..1000000]) >>= print
